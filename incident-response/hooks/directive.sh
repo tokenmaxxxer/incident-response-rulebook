@@ -14,7 +14,8 @@
 # plugin alongside core.
 YOU_DECIDE="장애 후 무엇을 배웠고 재발을 무엇으로 막을 것인가"
 USE_WHEN="장애 종결 직후"
-PRODUCES="timeline, blameless postmortem, action items w/ owner+deadline"
+# BOUNDARY-CASE: severity-tiered document depth (SEV1 full / SEV2 abbreviated / SEV3 summary-only) is deferred — no upstream severity-classification source exists in this repo yet. Not gated; documented limitation only (see docs/issue-1/proposals/incident-response.md (b)5).
+PRODUCES="summary, impact, timeline, root-cause-analysis (5-Whys/causal-chain), action items (owner+verb+outcome+deadline)"
 WRITE_SCOPE="['docs/issue-<n>/postmortems/**']"
 HAND_OFF="용량 부족이 원인이면 → capacity-planning; 계측 부재가 원인이면 → observability"
 . "${CORE_HOOKS_LIB:?}/role-directive.sh"

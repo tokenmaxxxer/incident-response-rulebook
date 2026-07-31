@@ -6,7 +6,8 @@ generated as skeleton scaffolding by issue-167.
 
 - **decides**: 장애 후 무엇을 배웠고 재발을 무엇으로 막을 것인가
 - **use_when**: 장애 종결 직후
-- **produces**: timeline, blameless postmortem, action items w/ owner+deadline
+- **produces**: summary, impact, timeline, root-cause-analysis (5-Whys/causal-chain), action items (owner+verb+outcome+deadline)
+- **note**: severity-tiered document depth (SEV1 full / SEV2 abbreviated / SEV3 summary-only) is deferred — see `docs/issue-1/proposals/incident-response.md`
 - **write_scope**: ['docs/issue-<n>/postmortems/**']
 - **hand-off**: 용량 부족이 원인이면 → capacity-planning; 계측 부재가 원인이면 → observability
 
