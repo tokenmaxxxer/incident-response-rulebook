@@ -1,0 +1,7 @@
+{
+  "name": "incident-response-rca-method-gate",
+  "description": "Phase-2 RCA-method + primary/contributing-factor distinction gate for incident-response reports: enforces that docs/issue-<n>/reports/incident-response.md names an RCA method (5 Whys / causal chain / fishbone / fault tree) and distinguishes primary cause from contributing factors, per docs/issue-1/proposals/incident-response.md (b)1-3. Additive to core's generic field-presence gate.",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}

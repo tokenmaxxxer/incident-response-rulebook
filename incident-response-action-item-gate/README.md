@@ -1,0 +1,54 @@
+# incident-response-action-item-gate
+
+Methodology owned: the phase-2 action-item **owner+verb+outcome+deadline
+shape**, per docs/issue-1/proposals/incident-response.md (b)1-3.
+
+Write surface: `docs/issue-[0-9]+/reports/incident-response.md`. This gate
+is additive on top of (never a replacement for) the core canon's generic
+field-presence gate and the sibling rca-method-gate — all three register
+separately as PreToolUse hooks on the same file.
+
+## The shape check
+
+At least one bullet/line under an "Action Item(s)" heading must carry
+**both**:
+
+- an owner-looking token — a capitalized name (e.g. `Jiwon Jung`) or an
+  `@handle`, and
+- a deadline-looking token — an ISO date (`2026-08-15`) or a
+  relative-date phrase (`by Friday`, `within 3 days`, `due ...`).
+
+**This is a shape check, not a truth check.** A regex cannot verify that
+the verb+outcome clause is semantically real, complete, or achievable —
+only that an owner and a deadline are present alongside it. Presence of
+both is treated as satisfying the four-slot shape; it says nothing about
+whether the action item is actually a good one.
+
+Outside the write surface above, the gate is a no-op (exit 0). Malformed
+or unparseable PreToolUse JSON, or a payload from which no project root
+can be resolved, denies (fails closed).
+
+## Kill switch
+
+```
+export INCIDENT_RESPONSE_ACTION_ITEM_GATE_OFF=1
+```
+
+## Running tests
+
+```
+bash tests/action-item-gate.test.sh
+```
+
+## Directive-fragment text
+
+This plugin does not own or touch `incident-response/hooks/directive.sh`.
+The following fragment is contributed into that centralized stub's
+`PRODUCES` value by the phase-2 integrator — it is not a separate hook
+from this plugin:
+
+> Phase-2 action items: docs/issue-<n>/reports/incident-response.md must
+> contain at least one action item in owner+verb+outcome+deadline form,
+> independently checkable by a reader who was not present at the
+> incident — enforced by incident-response-action-item-gate (shape check
+> only, not a truth check).

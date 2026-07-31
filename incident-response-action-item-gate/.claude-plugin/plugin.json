@@ -1,0 +1,7 @@
+{
+  "name": "incident-response-action-item-gate",
+  "description": "Enforces the phase-2 action-item owner+verb+outcome+deadline shape on docs/issue-<n>/reports/incident-response.md (issue-1 (b)1-3): at least one action item must carry an owner-looking token and a deadline-looking token. Shape check only, not a truth check.",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}
