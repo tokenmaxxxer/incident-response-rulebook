@@ -12,5 +12,9 @@
 # hooks/ tree is not vendored into this repo, so its actual config-discovery
 # convention could not be inspected. This is a phase-2 assumption, flagged
 # for confirmation once core issue #66 lands its config interface.
-RECORD_FIELDS_REQUIRED="timeline,blameless-postmortem,action-items"
+# Field-presence only: core's shared gate (core issue #66) checks heading
+# presence for each of these fields, not RCA depth or action-item schema
+# shape (owner+verb+outcome+deadline). Deeper content-shape checking stays
+# human/reviewer-checked at PR-merge time until core confirms it is supported.
+RECORD_FIELDS_REQUIRED="summary,impact,timeline,root-cause-analysis,action-items"
 RECORD_FIELDS_TARGET_SUFFIX="/reports/incident-response.md"
