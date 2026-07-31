@@ -8,6 +8,26 @@
       "name": "incident-response",
       "source": "./incident-response",
       "description": "The incident-response role on contract v3 (issue-160 round-4 promotion). Decides: 장애 후 무엇을 배웠고 재발을 무엇으로 막을 것인가."
+    },
+    {
+      "name": "incident-response-proposal-order-gate",
+      "source": "./incident-response-proposal-order-gate",
+      "description": "Issue #7: enforces phase-1 survey→scout→propose order for incident-response's own proposal write surface."
+    },
+    {
+      "name": "incident-response-proposal-evidence-gate",
+      "source": "./incident-response-proposal-evidence-gate",
+      "description": "Issue #7: enforces phase-1 proposal content shape (survey ref, scout-brief ref, adopt/skip list, decision-boundary rationale) for incident-response."
+    },
+    {
+      "name": "incident-response-rca-method-gate",
+      "source": "./incident-response-rca-method-gate",
+      "description": "Issue #7: enforces phase-2 record RCA-method naming and primary/contributing-factor distinction for incident-response."
+    },
+    {
+      "name": "incident-response-action-item-gate",
+      "source": "./incident-response-action-item-gate",
+      "description": "Issue #7: enforces phase-2 record action-item owner+verb+outcome+deadline shape for incident-response."
     }
   ]
 }

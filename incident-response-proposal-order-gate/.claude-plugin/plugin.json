@@ -1,0 +1,7 @@
+{
+  "name": "incident-response-proposal-order-gate",
+  "description": "Owns the phase-1 survey→scout→propose ORDER methodology (issue-1 (a)(1)): mechanically denies writes to docs/issue-<n>/proposals/incident-response*.md until that issue's current-state-survey.md and scout-brief.md already exist on disk (or a scout-directive skip is recorded).",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}

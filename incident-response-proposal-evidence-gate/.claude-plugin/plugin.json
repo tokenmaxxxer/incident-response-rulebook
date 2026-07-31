@@ -1,0 +1,7 @@
+{
+  "name": "incident-response-proposal-evidence-gate",
+  "description": "Enforces the phase-1 incident-response proposal content-shape methodology: every docs/issue-<n>/proposals/incident-response*.md must reference its current-state survey, reference its scout brief (or a stated scout-directive skip reason), carry an explicit adopt/skip list, and tie at least one adopted item back to this role's own decision boundary, per issue-1 (a)(2)-(3).",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}
