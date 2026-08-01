@@ -3,10 +3,10 @@
 # PreToolUse JSON.
 set -uo pipefail
 
-# Production/CI supplies the real core checkout path via CORE_HOOKS_LIB;
+# Production/CI supplies the real core checkout path via CLAUDE_PLUGIN_ROOT_CORE;
 # this is the sandbox fallback so the test file is runnable standalone.
-CORE_HOOKS_LIB="${CORE_HOOKS_LIB:-/tmp/claude-1000/core-ref}"
-export CORE_HOOKS_LIB
+CLAUDE_PLUGIN_ROOT_CORE="${CLAUDE_PLUGIN_ROOT_CORE:-/tmp/claude-1000/core-ref2}"
+export CLAUDE_PLUGIN_ROOT_CORE
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HOOKS="$HERE/../hooks"
@@ -24,7 +24,7 @@ run() { # want name file content
   td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"; mkdir -p "$td/$(dirname "$3")"
   printf '{"tool_name":"Write","tool_input":{"file_path":"%s","content":%s},"cwd":"%s"}' \
     "$3" "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$4")" "$td" \
-    | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+    | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   LAST_LOG="$(cat "$td/out.log" 2>/dev/null || true)"
   rm -rf "$td"; report "$1" "$got" "$2"
@@ -38,7 +38,7 @@ run_raw() { # want name file payload_json [extra_env...]
   td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"; mkdir -p "$td/$(dirname "$_rr_file")"
   shift 4
   printf '%s' "$_rr_payload" \
-    | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" "$@" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+    | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" "$@" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   LAST_LOG="$(cat "$td/out.log" 2>/dev/null || true)"
   rm -rf "$td"; report "$_rr_want" "$got" "$_rr_name"
@@ -80,17 +80,17 @@ mark_group baseline
 # malformed JSON on stdin — extend beyond the single truncated case that
 # existed before migration: truncated, non-object top-level, and empty.
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
-printf 'not json' | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
+printf 'not json' | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" malformed-json-truncated
 
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
-printf '["not", "an", "object"]' | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
+printf '["not", "an", "object"]' | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" malformed-json-non-object
 
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
-printf '' | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
+printf '' | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" malformed-json-empty
 mark_group malformed-json
@@ -117,7 +117,7 @@ print(json.dumps({
     },
 }))
 ')"
-printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 LAST_LOG="$(cat "$td/out.log" 2>/dev/null || true)"
 rm -rf "$td"; report allow "$got" edit-replace-all-true
@@ -144,7 +144,7 @@ print(json.dumps({
     },
 }))
 ')"
-printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 LAST_LOG="$(cat "$td/out.log" 2>/dev/null || true)"
 rm -rf "$td"; report allow "$got" multiedit-mixed-replace-all
@@ -182,7 +182,7 @@ print(json.dumps({
     "tool_input": {"file_path": sys.argv[1] + "/docs/issue-7/proposals/incident-response.md", "content": "no required elements here"},
 }))
 ' "$td")"
-printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" absolute-file-path
 
@@ -201,7 +201,7 @@ print(json.dumps({
     "tool_input": {"command": "printf \"x\" >> docs/issue-7/proposals/incident-response.md"},
 }))
 ')"
-printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" bash-write-same-target
 
@@ -213,7 +213,7 @@ print(json.dumps({
     "tool_input": {"command": "printf \"x\" >> docs/issue-7/reports/incident-response.md"},
 }))
 ')"
-printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
+printf '%s' "$payload_json" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/evidence-gate.sh" >"$td/out.log" 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report allow "$got" bash-write-outside-surface
 mark_group bash-write-detection
@@ -247,6 +247,17 @@ skipped in any sense.
 Adopt: keep the survey step. Skip: skip the extra tooling.
 This ties back to issue-1 decision boundary.'
 run deny negated-scout-skip-not-treated-as-skip "$TARGET" "$NEGATED_SCOUT"
+
+# "never skipped scouting" is itself a negation of skip — must not satisfy
+# scout_skip_stated, and with no real scout-brief reference/scout section
+# this must still be denied for missing element (ii).
+NEVER_SKIPPED_SCOUTING='current-state-survey referenced.
+
+We never skipped scouting for this change.
+
+Adopt: keep the survey step. Skip: skip the extra tooling.
+This ties back to issue-1 decision boundary.'
+run deny never-skipped-scouting-not-treated-as-skip "$TARGET" "$NEVER_SKIPPED_SCOUTING"
 mark_group semantic-scoping-regression
 
 printf '\n== %d passed, %d failed ==\n' "$pass" "$fail"

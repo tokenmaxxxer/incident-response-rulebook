@@ -4,11 +4,11 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HOOKS="$HERE/../hooks"
 
-# Production/CI supplies the real core checkout path for CORE_HOOKS_LIB
-# (the gate script sources gate-lib.sh from it); this is the sandbox
-# fallback so the suite is runnable standalone.
-CORE_HOOKS_LIB="${CORE_HOOKS_LIB:-/tmp/claude-1000/core-ref}"
-export CORE_HOOKS_LIB
+# Production/CI supplies the real core checkout path for
+# CLAUDE_PLUGIN_ROOT_CORE (the gate script sources gate-lib.sh from it);
+# this is the sandbox fallback so the suite is runnable standalone.
+CLAUDE_PLUGIN_ROOT_CORE="${CLAUDE_PLUGIN_ROOT_CORE:-/tmp/claude-1000/core-ref}"
+export CLAUDE_PLUGIN_ROOT_CORE
 
 pass=0; fail=0
 report() { if [ "$2" = "$1" ]; then pass=$((pass+1)); printf 'ok     %-30s %s\n' "$3" "$2"; else fail=$((fail+1)); printf 'FAIL   %-30s want=%s got=%s\n' "$3" "$1" "$2"; fi; }
@@ -221,6 +221,48 @@ MID_SENTENCE_CAP='# Incident Report
 run deny mid-sentence-capitalized-word-not-owner "$REC" "$MID_SENTENCE_CAP"
 hit group7_semantic_owner
 
+# --- Group 8: stopword-guard regression — "The due diligence: TBD" must NOT
+# be treated as owner+deadline shape (was previously a false-positive pass:
+# "The" matched as an owner-looking capitalized token, and "due diligence"
+# matched the now-removed bare `due` deadline alternative). --------------
+STOPWORD_DUE='# Incident Report
+## Action Items
+- The due diligence: TBD'
+run deny stopword-owner-and-bare-due-rejected "$REC" "$STOPWORD_DUE"
+hit group8_stopword_regression
+
+# --- Group 9: missing-core regression — CLAUDE_PLUGIN_ROOT_CORE unset/empty
+# or pointed nowhere must fail closed (deny), never silently allow. Mirrors
+# core's own gate-lib missing-core test (run-gate-lib-tests.sh group 7). ---
+MISSING_CORE_PAYLOAD=$(python3 - <<'PY'
+import json
+print(json.dumps({
+    "tool_name": "Write",
+    "tool_input": {
+        "file_path": "docs/issue-7/reports/incident-response.md",
+        "content": "# Incident Report\n## Action Items\n- Jiwon Jung: patch the retry loop by 2026-08-15\n",
+    },
+}))
+PY
+)
+# CLAUDE_PLUGIN_ROOT_CORE unset/empty trips the ${VAR:?...} guard itself
+# (bash aborts with exit 1, before the "|| exit 2" source-failure path even
+# runs); a nonexistent-path value instead reaches the "|| exit 2" branch.
+# Fail-closed only requires non-zero exit either way — assert that directly
+# rather than pinning one exit code, mirroring core's own missing-core test
+# intent (run-gate-lib-tests.sh group 7: deny, not silent-allow).
+td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"; mkdir -p "$td/docs/issue-7/reports"
+printf '%s' "$MISSING_CORE_PAYLOAD" \
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE= /bin/bash "$HOOKS/action-item-gate.sh" >/dev/null 2>&1
+rc=$?
+rm -rf "$td"
+if [ "$rc" -ne 0 ]; then
+  pass=$((pass+1)); printf 'ok     %-30s %s\n' missing-core-unset-fails-closed "exit-$rc (non-zero)"
+else
+  fail=$((fail+1)); printf 'FAIL   %-30s want=non-zero got=exit-0 (silent-allow)\n' missing-core-unset-fails-closed
+fi
+hit group9_missing_core
+
 printf '\n== %d passed, %d failed ==\n' "$pass" "$fail"
 
 # --- Self-check: assert every mandatory group actually ran ---------------
@@ -232,6 +274,8 @@ required_groups=(
   group5_abs_and_dotslash
   group6_bash_write
   group7_semantic_owner
+  group8_stopword_regression
+  group9_missing_core
 )
 missing=0
 for g in "${required_groups[@]}"; do

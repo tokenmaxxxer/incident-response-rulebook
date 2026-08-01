@@ -23,10 +23,10 @@
 # Migrated to core's gate-house standard (issue #10 phase 2): trap,
 # kill-switch, JSON parse, path normalization, Edit/MultiEdit
 # reconstruction, and Bash-write-target scanning are all sourced from
-# gate-lib.sh/gate-lib.py via CORE_HOOKS_LIB, never hand-rolled here.
+# gate-lib.sh/gate-lib.py via CLAUDE_PLUGIN_ROOT_CORE, never hand-rolled here.
 #
 # Kill switch: export INCIDENT_RESPONSE_RCA_METHOD_GATE_OFF=1
-. "${CORE_HOOKS_LIB:?}/gate-lib.sh"
+. "${CLAUDE_PLUGIN_ROOT_CORE:?core not resolved}/hooks/lib/gate-lib.sh" || { echo "rca-method-gate.sh: cannot source gate-lib.sh" >&2; exit 2; }
 gate_trap_fail_closed
 set -uo pipefail
 
