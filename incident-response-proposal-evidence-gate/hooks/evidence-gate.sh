@@ -15,7 +15,7 @@
 #         무엇으로 막을 것인가)
 #
 # Issue #10 phase 2: migrated to source core's gate-house standard
-# (CORE_HOOKS_LIB/gate-lib.sh, gate-lib.py) instead of hand-rolling the
+# (CLAUDE_PLUGIN_ROOT_CORE/gate-lib.sh, gate-lib.py) instead of hand-rolling the
 # fail-closed trap, kill-switch polarity, path normalization, and
 # Edit/MultiEdit reconstruction. Elements (ii) and (iii) upgraded from
 # bare substring/co-occurrence checks to section/paragraph-scoped
@@ -23,7 +23,7 @@
 # now also detected (path-scope only — content reconstruction for
 # Bash writes is out of scope).
 #
-# CORE_HOOKS_LIB must point at core's checked-out hooks/lib directory
+# CLAUDE_PLUGIN_ROOT_CORE must point at core's checked-out hooks/lib directory
 # (core repo, not this one). Not set here because core is not vendored
 # into this rulebook's tree — set it in the environment that loads this
 # plugin alongside core.
@@ -31,7 +31,7 @@
 # Kill switch: export INCIDENT_RESPONSE_PROPOSAL_EVIDENCE_GATE_OFF=1
 #   (unrecognized values stay ACTIVE; only a recognized on-spelling
 #   1/true/yes/on disables the gate — see gate_kill_switch_active)
-. "${CORE_HOOKS_LIB:?}/gate-lib.sh"
+. "${CLAUDE_PLUGIN_ROOT_CORE:?core not resolved}/hooks/lib/gate-lib.sh" || { echo "evidence-gate.sh: cannot source gate-lib.sh" >&2; exit 2; }
 gate_trap_fail_closed
 set -uo pipefail
 
@@ -251,12 +251,20 @@ try:
     scout_section = section_for(r'scout')
     scout_units = ["\n".join(scout_section)] if scout_section else []
     scout_units += [p for p in paragraphs() if re.search(r'\bscout\b', p, re.I)]
-    scout_skip_stated = any(
-        re.search(r'\bskip', u, re.I) and not re.search(r'\b(not|never|n\'t|didn\'t)\b[^.\n]*\bskip', u, re.I)
-        for u in scout_units
-    ) or has_any("scout skip", "skipped scouting") or (
-        has_any("bugfix") and has_any("no design decision")
-    )
+    NEG_RE = re.compile(r'\b(not|never|n\'t|didn\'t)\b[^.\n]*\bskip', re.I)
+
+    def _unit_skip_stated(u):
+        if NEG_RE.search(u):
+            return False
+        if re.search(r'\bskip', u, re.I):
+            return True
+        if re.search(r'scout skip|skipped scouting', u, re.I):
+            return True
+        if re.search(r'\bbugfix\b', u, re.I) and re.search(r'no design decision', u, re.I):
+            return True
+        return False
+
+    scout_skip_stated = any(_unit_skip_stated(u) for u in scout_units)
     if not (scout_referenced or scout_skip_stated):
         missing.append(
             "(ii) no reference to the scout brief and no explicit stated scout-directive "

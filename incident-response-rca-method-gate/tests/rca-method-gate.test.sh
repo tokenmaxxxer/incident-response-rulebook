@@ -5,10 +5,10 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HOOKS="$HERE/../hooks"
 
-# Production/CI supplies the real core checkout path via CORE_HOOKS_LIB;
+# Production/CI supplies the real core checkout path via CLAUDE_PLUGIN_ROOT_CORE;
 # this is the sandbox fallback so the gate script can source gate-lib.sh.
-CORE_HOOKS_LIB="${CORE_HOOKS_LIB:-/tmp/claude-1000/core-ref}"
-export CORE_HOOKS_LIB
+CLAUDE_PLUGIN_ROOT_CORE="${CLAUDE_PLUGIN_ROOT_CORE:-/tmp/claude-1000/core-ref}"
+export CLAUDE_PLUGIN_ROOT_CORE
 
 pass=0; fail=0
 report() { if [ "$2" = "$1" ]; then pass=$((pass+1)); printf 'ok     %-34s %s\n' "$3" "$2"; else fail=$((fail+1)); printf 'FAIL   %-34s want=%s got=%s\n' "$3" "$1" "$2"; fi; }

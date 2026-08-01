@@ -5,11 +5,11 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HOOKS="$HERE/../hooks"
 
-# Production/CI supplies the real core checkout path via CORE_HOOKS_LIB (the
+# Production/CI supplies the real core checkout path via CLAUDE_PLUGIN_ROOT_CORE (the
 # gate script sources gate-lib.sh from it); this is the sandbox fallback so
 # the test suite is runnable standalone.
-CORE_HOOKS_LIB="${CORE_HOOKS_LIB:-/tmp/claude-1000/core-ref}"
-export CORE_HOOKS_LIB
+CLAUDE_PLUGIN_ROOT_CORE="${CLAUDE_PLUGIN_ROOT_CORE:-/tmp/claude-1000/core-ref}"
+export CLAUDE_PLUGIN_ROOT_CORE
 
 pass=0; fail=0
 report() { if [ "$2" = "$1" ]; then pass=$((pass+1)); printf 'ok     %-34s %s\n' "$3" "$2"; else fail=$((fail+1)); printf 'FAIL   %-34s want=%s got=%s\n' "$3" "$1" "$2"; fi; }
@@ -29,7 +29,7 @@ run() { # want name path content [make_survey make_scout]
   if [ "$make_scout" = 1 ]; then echo "scout" > "$td/docs/issue-7/reports/incident-response/scout-brief.md"; fi
   printf '{"tool_name":"Write","tool_input":{"file_path":"%s","content":%s},"cwd":"%s"}' \
     "$path" "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$content")" "$td" \
-    | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+    | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   rm -rf "$td"; report "$want" "$got" "$name"
 }
@@ -43,7 +43,7 @@ run_payload() { # want name payload_json [make_survey make_scout] [extra_env...]
   mkdir -p "$td/docs/issue-7/reports/incident-response" "$td/docs/issue-7/proposals"
   if [ "$make_survey" = 1 ]; then echo "survey" > "$td/docs/issue-7/reports/incident-response/current-state-survey.md"; fi
   if [ "$make_scout" = 1 ]; then echo "scout" > "$td/docs/issue-7/reports/incident-response/scout-brief.md"; fi
-  printf '%s' "$payload" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" "$@" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  printf '%s' "$payload" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" "$@" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   rm -rf "$td"; report "$want" "$got" "$name"
 }
@@ -53,7 +53,7 @@ run_payload() { # want name payload_json [make_survey make_scout] [extra_env...]
 # the semantic-negation regression case, which needs custom survey content).
 run_payload_in_dir() { # want name td payload_json
   want="$1"; name="$2"; td="$3"; payload="$4"
-  printf '%s' "$payload" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  printf '%s' "$payload" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   report "$want" "$got" "$name"
 }
@@ -71,7 +71,7 @@ for shape in truncated non-object empty; do
     non-object) body='"just a string"' ;;
     empty) body='' ;;
   esac
-  printf '%s' "$body" | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  printf '%s' "$body" | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
   rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
   rm -rf "$td"; report deny "$got" "malformed-json-$shape"
 done
@@ -113,7 +113,7 @@ mark_group multiedit-mixed
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 printf '{"tool_name":"Write","tool_input":{"file_path":"docs/issue-7/proposals/incident-response.md","content":"x"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" INCIDENT_RESPONSE_PROPOSAL_ORDER_GATE_OFF=banana /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" INCIDENT_RESPONSE_PROPOSAL_ORDER_GATE_OFF=banana /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" kill-switch-garbage-stays-active
 mark_group kill-switch-garbage
@@ -122,7 +122,7 @@ mark_group kill-switch-garbage
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 printf '{"tool_name":"Write","tool_input":{"file_path":"docs/issue-7/proposals/incident-response.md","content":"x"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" INCIDENT_RESPONSE_PROPOSAL_ORDER_GATE_OFF=1 /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" INCIDENT_RESPONSE_PROPOSAL_ORDER_GATE_OFF=1 /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report allow "$got" kill-switch-recognized-on-disables
 
@@ -131,14 +131,14 @@ td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 abs_path="$td/docs/issue-7/proposals/incident-response.md"
 printf '{"tool_name":"Write","tool_input":{"file_path":"%s","content":"x"}}' "$abs_path" \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" absolute-path-matches-scope
 
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 printf '{"tool_name":"Write","tool_input":{"file_path":"./docs/issue-7/proposals/incident-response.md","content":"x"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" dot-relative-path-matches-scope
 mark_group abs-and-dot-relative
@@ -147,7 +147,7 @@ mark_group abs-and-dot-relative
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 printf '{"tool_name":"Bash","tool_input":{"command":"echo hi > docs/issue-7/proposals/incident-response.md"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report deny "$got" bash-write-target-no-survey
 
@@ -156,14 +156,14 @@ mkdir -p "$td/docs/issue-7/proposals" "$td/docs/issue-7/reports/incident-respons
 echo "survey" > "$td/docs/issue-7/reports/incident-response/current-state-survey.md"
 echo "scout" > "$td/docs/issue-7/reports/incident-response/scout-brief.md"
 printf '{"tool_name":"Bash","tool_input":{"command":"echo hi > docs/issue-7/proposals/incident-response.md"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report allow "$got" bash-write-target-both-present
 
 td="$(cd "$(mktemp -d)" && pwd -P)"; git init -q "$td"
 mkdir -p "$td/docs/issue-7/proposals"
 printf '{"tool_name":"Bash","tool_input":{"command":"cat notes.txt"}}' \
-  | env CLAUDE_PROJECT_DIR="$td" CORE_HOOKS_LIB="$CORE_HOOKS_LIB" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
+  | env CLAUDE_PROJECT_DIR="$td" CLAUDE_PLUGIN_ROOT_CORE="$CLAUDE_PLUGIN_ROOT_CORE" /bin/bash "$HOOKS/order-gate.sh" >/dev/null 2>&1
 rc=$?; case "$rc" in 0) got=allow ;; 2) got=deny ;; *) got="exit-$rc" ;; esac
 rm -rf "$td"; report allow "$got" bash-command-no-matching-target
 mark_group bash-write-target

@@ -16,7 +16,7 @@
 # write content.
 #
 # Kill switch: export INCIDENT_RESPONSE_PROPOSAL_ORDER_GATE_OFF=1
-. "${CORE_HOOKS_LIB:?}/gate-lib.sh"
+. "${CLAUDE_PLUGIN_ROOT_CORE:?core not resolved}/hooks/lib/gate-lib.sh" || { echo "order-gate.sh: cannot source gate-lib.sh" >&2; exit 2; }
 gate_trap_fail_closed
 set -uo pipefail
 
