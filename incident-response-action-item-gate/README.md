@@ -28,11 +28,27 @@ Outside the write surface above, the gate is a no-op (exit 0). Malformed
 or unparseable PreToolUse JSON, or a payload from which no project root
 can be resolved, denies (fails closed).
 
+## Migrated to gate-lib.sh (issue #10 phase 2)
+
+This gate now sources `core/hooks/lib/gate-lib.sh` (and `gate-lib.py` via
+`GATE_LIB_PY`) instead of hand-rolling its own machinery: the fail-closed
+`EXIT` trap, the kill-switch check, JSON parsing, `Edit`/`MultiEdit`
+reconstruction (including `replace_all`), root-relative path
+normalization, and `Bash`-tool write-target scanning are all sourced from
+core, not reimplemented here. `CORE_HOOKS_LIB` must point at core's
+checked-out `hooks/lib` directory in the environment that runs this gate.
+
 ## Kill switch
 
 ```
 export INCIDENT_RESPONSE_ACTION_ITEM_GATE_OFF=1
 ```
+
+Only a recognized on-spelling (`1`/`true`/`yes`/`on`, case-insensitive)
+disables the gate. Any other value — including an unrecognized/garbage
+value such as a typo — leaves the gate **active**; this is the fixed
+polarity `gate_kill_switch_active` provides (the pre-migration hand-rolled
+check had the opposite, fail-open behavior for unrecognized values).
 
 ## Running tests
 
